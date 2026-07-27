@@ -27,7 +27,6 @@ build:
   script:
     - docker build -t ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} .
     - docker tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} ${IMAGE_NAME}:latest
-    - docker images ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} --format 'Size: {{.Size}}'
     - docker save ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} -o go-admin-image.tar
   artifacts:
     paths:
@@ -55,6 +54,6 @@ push:
     - docker load -i go-admin-image.tar
     - docker push ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
     - docker push ${IMAGE_NAME}:latest
-    - echo "Pushed: ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
+    - echo "Pushed"
   only:
     - main
