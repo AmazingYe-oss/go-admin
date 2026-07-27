@@ -1,6 +1,3 @@
-# GitLab CI/CD 流水线 - go-admin 后端
-# 流水线阶段: lint -> test -> build -> scan -> push
-
 stages:
   - lint
   - test
@@ -9,78 +6,55 @@ stages:
   - push
 
 variables:
-  # 镜像名称（使用 GitLab 内置变量拼接）
   IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
-  # Go 版本
-  GO_VERSION: "1.24"
 
-# ===== 阶段 1: lint - 代码静态检查 =====
 lint:
   stage: lint
   script:
-    - echo "=== Go 代码静态检查 ==="
     - go vet ./... 2>&1 || true
-    - echo "Lint 检查完成"
+    - echo "Lint done"
   allow_failure: true
 
-# ===== 阶段 2: test - 单元测试 =====
 test:
   stage: test
   script:
-    - echo "=== 运行单元测试 ==="
     - go test ./... -v -cover 2>&1 || true
-    - echo "测试完成"
+    - echo "Test done"
   allow_failure: true
 
-# ===== 阶段 3: build - 多阶段构建镜像 =====
 build:
   stage: build
   script:
-    - echo "=== 构建多阶段 Docker 镜像 ==="
     - docker build -t ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} .
     - docker tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} ${IMAGE_NAME}:latest
-    - echo "=== 镜像大小 ==="
-    - docker images ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} --format "{{.Size}}"
-    # 保存镜像为 tar 文件供后续阶段使用
+    - docker images ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} --format "Size: {{.Size}}"
     - docker save ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} -o go-admin-image.tar
   artifacts:
     paths:
       - go-admin-image.tar
     expire_in: 1 hour
 
-# ===== 阶段 4: scan - Trivy 漏洞扫描 =====
 scan:
   stage: scan
   script:
-    - echo "=== Trivy 漏洞扫描 ==="
-    # 安装 Trivy（如果未安装）
     - which trivy || (curl -sfL https://mirrors.aliyun.com/trivy/trivy_0.55.0_Linux-64bit.tar.gz -o /tmp/trivy.tar.gz && tar -xzf /tmp/trivy.tar.gz -C /usr/local/bin trivy)
-    # 加载镜像
     - docker load -i go-admin-image.tar
-    # 扫描（CRITICAL 漏洞会导致流水线失败）
     - trivy image --exit-code 1 --severity CRITICAL ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} || true
-    # 生成扫描报告
     - trivy image --format json -o trivy-report.json ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} || true
-    - echo "=== 扫描完成 ==="
+    - echo "Scan done"
   artifacts:
     paths:
       - trivy-report.json
     expire_in: 7 days
   allow_failure: true
 
-# ===== 阶段 5: push - 推送到 GitLab Container Registry =====
 push:
   stage: push
   script:
-    - echo "=== 推送镜像到 GitLab Container Registry ==="
-    # 登录 GitLab Container Registry
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
-    # 加载镜像
     - docker load -i go-admin-image.tar
-    # 推送
     - docker push ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
     - docker push ${IMAGE_NAME}:latest
-    - echo "=== 镜像推送完成 ==="
-    - echo "镜像地址: ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
+    - echo "Pushed: ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
   only:
     - main
