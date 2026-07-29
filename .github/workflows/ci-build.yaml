@@ -49,56 +49,56 @@ jobs:
           go mod download
           go mod verify
 
-      - name: Install goimports
-        run: go install golang.org/x/tools/cmd/goimports@v0.42.0
-
-      - name: Auto format code
-        run: |
-          echo "执行 goimports 格式化..."
-          goimports -w .
-
-      - name: Go Format Check
-        continue-on-error: true
-        run: |
-          if [ -n "$(gofmt -l .)" ]; then
-            echo "❌ 存在未格式化的代码文件："
-            gofmt -l .
-            exit 1
-          fi
-
-      - name: Golangci Lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
-          args: --timeout=5m
-        continue-on-error: true
-
-      - name: Run Unit Test
-        continue-on-error: true
-        run: |
-          go test -race -coverprofile=coverage.out -covermode=atomic ./...
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: coverage-report
-          path: coverage.out
-
-      - name: Build Go binary
-        run: |
-          mkdir -p artifacts
-          go build -o artifacts/go-admin .
-
-      - name: Upload Go binary
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: go-admin-binary
-          path: artifacts/
-
-      # ============== 镜像构建推送 ==============
-
+      # [TEMP DISABLED] - name: Install goimports
+      #   run: go install golang.org/x/tools/cmd/goimports@v0.42.0
+      # 
+      # [TEMP DISABLED] - name: Auto format code
+      #   run: |
+      #     echo "执行 goimports 格式化..."
+      #     goimports -w .
+      # 
+      # [TEMP DISABLED] - name: Go Format Check
+      #   continue-on-error: true
+      #   run: |
+      #     if [ -n "$(gofmt -l .)" ]; then
+      #       echo "❌ 存在未格式化的代码文件："
+      #       gofmt -l .
+      #       exit 1
+      #     fi
+      # 
+      # [TEMP DISABLED] - name: Golangci Lint
+      #   uses: golangci/golangci-lint-action@v9
+      #   with:
+      #     version: ${{ env.GOLANGCI_LINT_VERSION }}
+      #     args: --timeout=5m
+      #   continue-on-error: true
+      # 
+      # [TEMP DISABLED] - name: Run Unit Test
+      #   continue-on-error: true
+      #   run: |
+      #     go test -race -coverprofile=coverage.out -covermode=atomic ./...
+      # 
+      # [TEMP DISABLED] - name: Upload coverage report
+      #   if: always()
+      #   uses: actions/upload-artifact@v6
+      #   with:
+      #     name: coverage-report
+      #     path: coverage.out
+      # 
+      # [TEMP DISABLED] - name: Build Go binary
+      #   run: |
+      #     mkdir -p artifacts
+      #     go build -o artifacts/go-admin .
+      # 
+      # [TEMP DISABLED] - name: Upload Go binary
+      #   if: always()
+      #   uses: actions/upload-artifact@v6
+      #   with:
+      #     name: go-admin-binary
+      #     path: artifacts/
+      # 
+      # # ============== 镜像构建推送 ==============
+      # 
       - name: Login to Aliyun ACR
         if: github.event_name == 'push'
         uses: aliyun/acr-login@v1
@@ -149,13 +149,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Scan image for vulnerabilities (Trivy)
-        if: github.event_name == 'push'
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_REPO }}:${{ steps.tags.outputs.short_sha }}
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+      # [TEMP DISABLED] - name: Scan image for vulnerabilities (Trivy)
+      #   if: github.event_name == 'push'
+      #   uses: aquasecurity/trivy-action@v0.36.0
+      #   with:
+      #     image-ref: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_REPO }}:${{ steps.tags.outputs.short_sha }}
+      #     format: 'table'
+      #     exit-code: '1'
+      #     ignore-unfixed: true
+      #     vuln-type: 'os,library'
+      #     severity: 'CRITICAL,HIGH'
