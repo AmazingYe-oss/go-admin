@@ -162,7 +162,6 @@ func trackNetworkSpeed() (uint64, uint64) {
 			netInTransfer += v.BytesRecv
 			netOutTransfer += v.BytesSent
 		}
-		}
 	}
 	return netInSpeed, netOutSpeed
 }
