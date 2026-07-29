@@ -21,6 +21,7 @@ jobs:
       ACR_REGISTRY: crpi-he7mqvhihpnvi08o.cn-shanghai.personal.cr.aliyuncs.com
       IMAGE_REPO: go-project1/go-admin
       GO_VERSION: "1.24"
+      GOTOOLCHAIN: auto
       GOLANGCI_LINT_VERSION: v2.12.2
 
     permissions:
@@ -77,7 +78,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-report
           path: coverage.out
@@ -89,7 +90,7 @@ jobs:
 
       - name: Upload Go binary
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: go-admin-binary
           path: artifacts/
