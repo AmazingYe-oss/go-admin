@@ -1,6 +1,5 @@
 name: GoAdmin Full CI Pipeline
 
-# 触发规则
 on:
   push:
     branches: [ main ]
@@ -8,11 +7,9 @@ on:
   pull_request:
     branches: [ main ]
 
-# 最小权限：默认只读，构建推送时按需扩展
 permissions:
   contents: read
 
-# 同一分支/同一次 PR 的旧任务自动取消，节省 runner 资源
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -21,29 +18,24 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     env:
-      # =========【请自行修改这几项】=========
       ACR_REGISTRY: crpi-he7mqvhihpnvi08o.cn-shanghai.personal.cr.aliyuncs.com
       IMAGE_REPO: go-project1/go-admin
       GO_VERSION: "1.24"
       GOLANGCI_LINT_VERSION: v1.61.0
 
-    # 推送镜像到 ACR 时需要写 Packages 权限
     permissions:
       contents: read
       packages: write
 
     steps:
-      # 1. 拉取代码
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      # 2. 安装 Go 环境
       - name: Setup Golang
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      # 3. 缓存 Go 依赖包
       - name: Cache Go Modules
         uses: actions/cache@v4
         with:
@@ -52,23 +44,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      # 4. 下载依赖 + 校验哈希，防止依赖被篡改
       - name: Download and verify go modules
         run: |
           go mod download
           go mod verify
 
-      # 5. 安装 goimports
       - name: Install goimports
         run: go install golang.org/x/tools/cmd/goimports@latest
 
-      # 6. 自动格式化代码
       - name: Auto format code
         run: |
-          echo "执行 goimports 格式化（含 gofmt + import 排序）..."
+          echo "执行 goimports 格式化..."
           goimports -w .
 
-      # 7. 代码格式化校验
       - name: Go Format Check
         run: |
           if [ -n "$(gofmt -l .)" ]; then
@@ -77,19 +65,16 @@ jobs:
             exit 1
           fi
 
-      # 8. 静态代码检查
       - name: Golangci Lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --timeout=5m
 
-      # 9. 单元测试 + 覆盖率 + 竞态检测
       - name: Run Unit Test
         run: |
           go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
-      # 10. 上传覆盖率产物
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
@@ -97,11 +82,11 @@ jobs:
           name: coverage-report
           path: coverage.out
 
-      # 11. 构建产物归档
       - name: Build Go binary
         run: |
           mkdir -p artifacts
           go build -o artifacts/go-admin ./...
+
       - name: Upload Go binary
         if: always()
         uses: actions/upload-artifact@v4
@@ -109,9 +94,8 @@ jobs:
           name: go-admin-binary
           path: artifacts/
 
-      # ====================== 前置检查全部通过，才进入镜像构建推送 ======================
+      # ============== 镜像构建推送 ==============
 
-      # 12. 登录阿里云 ACR（PR 阶段跳过）
       - name: Login to Aliyun ACR
         if: github.event_name == 'push'
         uses: aliyun/acr-login@v1
@@ -121,12 +105,10 @@ jobs:
         with:
           registry: ${{ env.ACR_REGISTRY }}
 
-      # 13. 设置 Docker Buildx
       - name: Set up Docker Buildx
         if: github.event_name == 'push'
         uses: docker/setup-buildx-action@v3
 
-      # 14. 计算镜像标签（在 shell 内拼装，避免表达式里引用 env 的报错）
       - name: Compute image tags
         if: github.event_name == 'push'
         id: tags
@@ -134,18 +116,15 @@ jobs:
           SHORT_SHA=${GITHUB_SHA::7}
           FULL_NAME="${ACR_REGISTRY}/${IMAGE_REPO}"
           TAGS="${FULL_NAME}:${SHORT_SHA} ${FULL_NAME}:latest"
-
-          # 如果是 v* tag 触发，额外打语义化版本号
           if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" =~ ^v ]]; then
             VERSION=${GITHUB_REF_NAME#v}
             TAGS="$TAGS ${FULL_NAME}:${VERSION}"
           fi
-
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "tags<<EOF" >> "$GITHUB_OUTPUT"
           echo "$TAGS" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
-      # 15. 验证 Dockerfile 存在
       - name: Verify Dockerfile exists
         if: github.event_name == 'push'
         run: |
@@ -154,7 +133,6 @@ jobs:
             exit 1
           fi
 
-      # 16. 构建并推送 Docker 镜像
       - name: Build and push Docker image
         if: github.event_name == 'push'
         uses: docker/build-push-action@v6
@@ -166,12 +144,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # 17. 镜像漏洞扫描
       - name: Scan image for vulnerabilities (Trivy)
         if: github.event_name == 'push'
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_REPO }}:${{ env.SHORT_SHA }}
+          image-ref: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_REPO }}:${{ steps.tags.outputs.short_sha }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
