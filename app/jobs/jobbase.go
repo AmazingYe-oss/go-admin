@@ -131,7 +131,7 @@ func setup(key string, db *gorm.DB) {
 			j.JobId = jobList[i].JobId
 			j.Name = jobList[i].JobName
 
-			sysJob.EntryId, err = AddJob(crontab, j)
+			sysJob.EntryId, _ = AddJob(crontab, j)
 		} else if jobList[i].JobType == 2 {
 			j := &ExecJob{}
 			j.InvokeTarget = jobList[i].InvokeTarget
@@ -139,9 +139,9 @@ func setup(key string, db *gorm.DB) {
 			j.JobId = jobList[i].JobId
 			j.Name = jobList[i].JobName
 			j.Args = jobList[i].Args
-			sysJob.EntryId, err = AddJob(crontab, j)
+			sysJob.EntryId, _ = AddJob(crontab, j)
 		}
-		err = sysJob.Update(db, jobList[i].JobId)
+		_ = sysJob.Update(db, jobList[i].JobId)
 	}
 
 	// 其中任务

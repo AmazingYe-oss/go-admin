@@ -18,11 +18,10 @@ func AuthCheckRole() gin.HandlerFunc {
 		data, _ := c.Get(jwtauth.JwtPayloadKey)
 		v := data.(jwtauth.MapClaims)
 		e := sdk.Runtime.GetCasbinKey(c.Request.Host)
-		var res, casbinExclude bool
+		var casbinExclude bool
 		var err error
 		//检查权限
 		if v["rolekey"] == "admin" {
-			res = true
 			c.Next()
 			return
 		}
@@ -37,7 +36,7 @@ func AuthCheckRole() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		res, err = e.Enforce(v["rolekey"], c.Request.URL.Path, c.Request.Method)
+		res, err := e.Enforce(v["rolekey"], c.Request.URL.Path, c.Request.Method)
 		if err != nil {
 			log.Errorf("AuthCheckRole error:%s method:%s path:%s", err, c.Request.Method, c.Request.URL.Path)
 			response.Error(c, 500, err, "")

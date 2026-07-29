@@ -40,7 +40,7 @@ func (e SysDept) GetPage(c *gin.Context) {
 		e.Error(500, err, err.Error())
 		return
 	}
-	list := make([]models.SysDept, 0)
+	var list []models.SysDept
 	list, err = s.SetDeptPage(&req)
 	if err != nil {
 		e.Error(500, err, "查询失败")
@@ -195,7 +195,7 @@ func (e SysDept) Get2Tree(c *gin.Context) {
 		e.Error(500, err, err.Error())
 		return
 	}
-	list := make([]dto.DeptLabel, 0)
+	var list []dto.DeptLabel
 	list, err = s.SetDeptTree(&req)
 	if err != nil {
 		e.Error(500, err, "查询失败")
@@ -217,7 +217,7 @@ func (e SysDept) GetDeptTreeRoleSelect(c *gin.Context) {
 		return
 	}
 
-	id, err := pkg.StringToInt(c.Param("roleId"))
+	id, _ := pkg.StringToInt(c.Param("roleId"))
 	result, err := s.SetDeptLabel()
 	if err != nil {
 		e.Error(500, err, err.Error())

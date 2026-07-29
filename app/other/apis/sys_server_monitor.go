@@ -152,7 +152,7 @@ func getNetworkInfo() map[string]interface{} {
 }
 
 func trackNetworkSpeed() (uint64, uint64) {
-	var netInSpeed, netOutSpeed, netInTransfer, netOutTransfer, lastUpdateNetStats uint64
+	var netInSpeed, netOutSpeed, netInTransfer, netOutTransfer uint64
 	nc, err := net.IOCounters(true)
 	if err == nil {
 		for _, v := range nc {
@@ -162,13 +162,7 @@ func trackNetworkSpeed() (uint64, uint64) {
 			netInTransfer += v.BytesRecv
 			netOutTransfer += v.BytesSent
 		}
-		now := uint64(time.Now().Unix())
-		diff := now - lastUpdateNetStats
-		if diff > 0 {
-			netInSpeed = (netInTransfer - netInTransfer) / diff
-			netOutSpeed = (netOutTransfer - netOutTransfer) / diff
 		}
-		lastUpdateNetStats = now
 	}
 	return netInSpeed, netOutSpeed
 }
