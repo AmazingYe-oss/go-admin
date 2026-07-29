@@ -118,14 +118,14 @@ jobs:
         run: |
           SHORT_SHA=${GITHUB_SHA::7}
           FULL_NAME="${ACR_REGISTRY}/${IMAGE_REPO}"
-          TAGS="${FULL_NAME}:${SHORT_SHA} ${FULL_NAME}:latest"
-          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" =~ ^v ]]; then
-            VERSION=${GITHUB_REF_NAME#v}
-            TAGS="$TAGS ${FULL_NAME}:${VERSION}"
-          fi
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "tags<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$TAGS" >> "$GITHUB_OUTPUT"
+          echo "${FULL_NAME}:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "${FULL_NAME}:latest" >> "$GITHUB_OUTPUT"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" =~ ^v ]]; then
+            VERSION=${GITHUB_REF_NAME#v}
+            echo "${FULL_NAME}:${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
           echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Verify Dockerfile exists
