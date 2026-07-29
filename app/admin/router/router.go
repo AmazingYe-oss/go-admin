@@ -2,8 +2,6 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	_ "github.com/gin-gonic/gin"
-	"github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth"
 	jwt "github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth"
 )
 
@@ -32,7 +30,7 @@ func examplesNoCheckRoleRouter(r *gin.Engine) {
 }
 
 // 需要认证的路由示例
-func examplesCheckRoleRouter(r *gin.Engine, authMiddleware *jwtauth.GinJWTMiddleware) {
+func examplesCheckRoleRouter(r *gin.Engine, authMiddleware *jwt.GinJWTMiddleware) {
 	// 可根据业务需求来设置接口版本
 	v1 := r.Group("/api/v1")
 	for _, f := range routerCheckRole {
