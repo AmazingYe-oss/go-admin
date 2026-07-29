@@ -21,7 +21,7 @@ jobs:
       ACR_REGISTRY: crpi-he7mqvhihpnvi08o.cn-shanghai.personal.cr.aliyuncs.com
       IMAGE_REPO: go-project1/go-admin
       GO_VERSION: "1.24"
-      GOLANGCI_LINT_VERSION: v1.61.0
+      GOLANGCI_LINT_VERSION: v2.12.2
 
     permissions:
       contents: read
@@ -66,7 +66,7 @@ jobs:
           fi
 
       - name: Golangci Lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --timeout=5m
