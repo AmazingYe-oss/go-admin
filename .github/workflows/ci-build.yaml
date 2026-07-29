@@ -88,7 +88,7 @@ jobs:
       - name: Build Go binary
         run: |
           mkdir -p artifacts
-          go build -o artifacts/go-admin ./...
+          go build -o artifacts/go-admin .
 
       - name: Upload Go binary
         if: always()
