@@ -111,8 +111,6 @@ jobs:
       - name: Set up Docker Buildx
         if: github.event_name == 'push'
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: image=moby/buildkit:master
 
       - name: Compute image tags
         if: github.event_name == 'push'
@@ -146,8 +144,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # [TEMP DISABLED] cache-from: type=gha
+          # [TEMP DISABLED] cache-to: type=gha,mode=max
 
       # [TEMP DISABLED] - name: Scan image for vulnerabilities (Trivy)
       #   if: github.event_name == 'push'
