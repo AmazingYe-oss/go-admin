@@ -49,15 +49,15 @@ jobs:
           go mod download
           go mod verify
 
-      # [TEMP DISABLED] - name: Install goimports
+      - name: Install goimports
       #   run: go install golang.org/x/tools/cmd/goimports@v0.42.0
       # 
-      # [TEMP DISABLED] - name: Auto format code
+      - name: Auto format code
       #   run: |
       #     echo "执行 goimports 格式化..."
       #     goimports -w .
       # 
-      # [TEMP DISABLED] - name: Go Format Check
+      - name: Go Format Check
       #   continue-on-error: true
       #   run: |
       #     if [ -n "$(gofmt -l .)" ]; then
@@ -66,31 +66,31 @@ jobs:
       #       exit 1
       #     fi
       # 
-      # [TEMP DISABLED] - name: Golangci Lint
+      - name: Golangci Lint
       #   uses: golangci/golangci-lint-action@v9
       #   with:
       #     version: ${{ env.GOLANGCI_LINT_VERSION }}
       #     args: --timeout=5m
       #   continue-on-error: true
       # 
-      # [TEMP DISABLED] - name: Run Unit Test
+      - name: Run Unit Test
       #   continue-on-error: true
       #   run: |
       #     go test -race -coverprofile=coverage.out -covermode=atomic ./...
       # 
-      # [TEMP DISABLED] - name: Upload coverage report
+      - name: Upload coverage report
       #   if: always()
       #   uses: actions/upload-artifact@v6
       #   with:
       #     name: coverage-report
       #     path: coverage.out
       # 
-      # [TEMP DISABLED] - name: Build Go binary
+      - name: Build Go binary
       #   run: |
       #     mkdir -p artifacts
       #     go build -o artifacts/go-admin .
       # 
-      # [TEMP DISABLED] - name: Upload Go binary
+      - name: Upload Go binary
       #   if: always()
       #   uses: actions/upload-artifact@v6
       #   with:
@@ -143,10 +143,10 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.tags }}
-          # [TEMP DISABLED] cache-from: type=gha
-          # [TEMP DISABLED] cache-to: type=gha,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      # [TEMP DISABLED] - name: Scan image for vulnerabilities (Trivy)
+      - name: Scan image for vulnerabilities (Trivy)
       #   if: github.event_name == 'push'
       #   uses: aquasecurity/trivy-action@v0.36.0
       #   with:
