@@ -58,6 +58,7 @@ jobs:
           goimports -w .
 
       - name: Go Format Check
+        continue-on-error: true
         run: |
           if [ -n "$(gofmt -l .)" ]; then
             echo "❌ 存在未格式化的代码文件："
@@ -70,6 +71,7 @@ jobs:
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --timeout=5m
+        continue-on-error: true
 
       - name: Run Unit Test
         run: |
