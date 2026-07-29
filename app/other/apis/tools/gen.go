@@ -85,9 +85,9 @@ func (e Gen) Preview(c *gin.Context) {
 
 	tab, _ := table.Get(db,false)
 	var b1 bytes.Buffer
-	err = t1.Execute(&b1, tab)
+	_ = t1.Execute(&b1, tab)
 	var b2 bytes.Buffer
-	err = t2.Execute(&b2, tab)
+	_ = t2.Execute(&b2, tab)
 	var b3 bytes.Buffer
 	err = t3.Execute(&b3, tab)
 	var b4 bytes.Buffer
@@ -164,7 +164,7 @@ func (e Gen) GenApiToFile(c *gin.Context) {
 func (e Gen) NOActionsGen(c *gin.Context, tab tools.SysTables) {
 	e.Context = c
 	log := e.GetLogger()
-	tab.MLTBName = strings.Replace(tab.TBName, "_", "-", -1)
+	tab.MLTBName = strings.ReplaceAll(tab.TBName, "_", "-")
 
 	basePath := "template/v4/"
 	routerFile := basePath + "no_actions/router_check_role.go.template"
@@ -229,9 +229,9 @@ func (e Gen) NOActionsGen(c *gin.Context, tab tools.SysTables) {
 	}
 
 	var b1 bytes.Buffer
-	err = t1.Execute(&b1, tab)
+	_ = t1.Execute(&b1, tab)
 	var b2 bytes.Buffer
-	err = t2.Execute(&b2, tab)
+	_ = t2.Execute(&b2, tab)
 	var b3 bytes.Buffer
 	err = t3.Execute(&b3, tab)
 	var b4 bytes.Buffer
@@ -303,7 +303,7 @@ func (e Gen) GenMenuAndApi(c *gin.Context) {
 
 	table.TableId = id
 	tab, _ := table.Get(e.Orm,true)
-	tab.MLTBName = strings.Replace(tab.TBName, "_", "-", -1)
+	tab.MLTBName = strings.ReplaceAll(tab.TBName, "_", "-")
 
 	Mmenu := dto.SysMenuInsertReq{}
 	Mmenu.Title = tab.TableComment

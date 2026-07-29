@@ -39,7 +39,7 @@ func (e Gen) GetDBTableList(c *gin.Context) {
 	}
 
 	if index := c.Request.FormValue("pageIndex"); index != "" {
-		pageIndex, err = pkg.StringToInt(index)
+		pageIndex, _ = pkg.StringToInt(index)
 	}
 
 	db, err := pkg.GetOrm(c)
