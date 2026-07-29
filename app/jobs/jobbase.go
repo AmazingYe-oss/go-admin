@@ -46,7 +46,7 @@ func (e *ExecJob) Run() {
 		log.Warn("[Job] ExecJob Run job nil")
 		return
 	}
-	err := CallExec(obj.(JobExec), e.Args)
+	err := CallExec(obj, e.Args)
 	if err != nil {
 		// 如果失败暂停一段时间重试
 		fmt.Println(time.Now().Format(timeFormat), " [ERROR] mission failed! ", err)
@@ -60,7 +60,6 @@ func (e *ExecJob) Run() {
 	//str := time.Now().Format(timeFormat) + " [INFO] JobCore " + string(e.EntryId) + "exec success , spend :" + latencyTime.String()
 	//ws.SendAll(str)
 	log.Infof("[Job] JobCore %s exec success , spend :%v", e.Name, latencyTime)
-	return
 }
 
 // Run http 任务接口
@@ -92,7 +91,6 @@ LOOP:
 	//TODO: 待完善部分
 
 	log.Infof("[Job] JobCore %s exec success , spend :%v", h.Name, latencyTime)
-	return
 }
 
 // Setup 初始化

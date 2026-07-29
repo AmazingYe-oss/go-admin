@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 	"go-admin/common/global"
-	"io/ioutil"
+	"os"
 	"log"
 	"strings"
 
@@ -48,7 +48,7 @@ func ExecSql(db *gorm.DB, filePath string) error {
 			fmt.Println(sqlList[i])
 			continue
 		}
-		sql := strings.Replace(sqlList[i]+";", "\n", "", -1)
+		sql := strings.ReplaceAll(sqlList[i]+";", "\n", "")
 		sql = strings.TrimSpace(sql)
 		if err = db.Exec(sql).Error; err != nil {
 			log.Printf("error sql: %s", sql)
@@ -61,10 +61,10 @@ func ExecSql(db *gorm.DB, filePath string) error {
 }
 
 func Ioutil(filePath string) (string, error) {
-	if contents, err := ioutil.ReadFile(filePath); err == nil {
+	if contents, err := os.ReadFile(filePath); err == nil {
 		//因为contents是[]byte类型，直接转换成string类型后会多一行空格,需要使用strings.Replace替换换行符
-		result := strings.Replace(string(contents), "\n", "", 1)
-		fmt.Println("Use ioutil.ReadFile to read a file:", result)
+		result := strings.ReplaceAll(string(contents), "\n", "")
+		fmt.Println("Use os.ReadFile to read a file:", result)
 		return result, nil
 	} else {
 		return "", err

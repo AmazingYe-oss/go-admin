@@ -108,7 +108,7 @@ func genFile() error {
 		m["Package"] = "version"
 	}
 	var b1 bytes.Buffer
-	err = t1.Execute(&b1, m)
+	_ = t1.Execute(&b1, m)
 	if goAdmin {
 		pkg.FileCreate(b1, "./cmd/migrate/migration/version/"+m["GenerateTime"]+"_migrate.go")
 	} else {

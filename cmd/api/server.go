@@ -168,9 +168,9 @@ func initRouter() {
 		h = gin.New()
 		sdk.Runtime.SetEngine(h)
 	}
-	switch h.(type) {
+	switch h := h.(type) {
 	case *gin.Engine:
-		r = h.(*gin.Engine)
+		r = h
 	default:
 		log.Fatal("not support other engine")
 		//os.Exit(-1)

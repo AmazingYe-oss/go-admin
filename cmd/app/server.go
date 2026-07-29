@@ -85,7 +85,7 @@ func genFile() error {
 		return err
 	}
 	pkg.FileCreate(b1, "./cmd/api/"+appName+".go")
-	t2, err := template.ParseFiles("template/router.template")
+	t2, _ := template.ParseFiles("template/router.template")
 	var b2 bytes.Buffer
 	_ = t2.Execute(&b2, nil)
 	pkg.FileCreate(b2, appPath+"/router/router.go")

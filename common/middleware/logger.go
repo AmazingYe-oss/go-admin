@@ -7,7 +7,7 @@ import (
 	"go-admin/app/admin/service/dto"
 	"go-admin/common"
 	"io"
-	"io/ioutil"
+	"os"
 	"net/http"
 	"strings"
 	"time"
@@ -38,15 +38,15 @@ func LoggerToFile() gin.HandlerFunc {
 				log.Warnf("copy body error, %s", err.Error())
 				err = nil
 			}
-			rb, _ := ioutil.ReadAll(bf)
-			c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(rb))
+			rb, _ := io.ReadAll(bf)
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(rb))
 			body = string(rb)
 		}
 
 		c.Next()
 		url := c.Request.RequestURI
-		if strings.Index(url, "logout") > -1 ||
-			strings.Index(url, "login") > -1 {
+		if strings.Contains(url, "logout") ||
+			strings.Contains(url, "login") {
 			return
 		}
 		// 结束时间

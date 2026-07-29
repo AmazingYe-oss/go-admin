@@ -82,9 +82,9 @@ func Permission(tableName string, p *DataPermission) func(db *gorm.DB) *gorm.DB 
 func getPermissionFromContext(c *gin.Context) *DataPermission {
 	p := new(DataPermission)
 	if pm, ok := c.Get(PermissionKey); ok {
-		switch pm.(type) {
+		switch pm := pm.(type) {
 		case *DataPermission:
-			p = pm.(*DataPermission)
+			p = pm
 		}
 	}
 	return p

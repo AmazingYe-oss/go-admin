@@ -26,11 +26,11 @@ func (e Gen) GetDBColumnList(c *gin.Context) {
 	var pageIndex = 1
 
 	if size := c.Request.FormValue("pageSize"); size != "" {
-		pageSize, err = pkg.StringToInt(size)
+		pageSize, _ = pkg.StringToInt(size)
 	}
 
 	if index := c.Request.FormValue("pageIndex"); index != "" {
-		pageIndex, err = pkg.StringToInt(index)
+		pageIndex, _ = pkg.StringToInt(index)
 	}
 
 	db, err := pkg.GetOrm(c)

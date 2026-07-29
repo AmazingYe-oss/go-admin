@@ -17,9 +17,9 @@ func InitRouter() {
 		log.Fatal("not found engine...")
 		os.Exit(-1)
 	}
-	switch h.(type) {
+	switch h := h.(type) {
 	case *gin.Engine:
-		r = h.(*gin.Engine)
+		r = h
 	default:
 		log.Fatal("not support other engine")
 		os.Exit(-1)

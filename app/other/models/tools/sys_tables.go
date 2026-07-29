@@ -185,7 +185,7 @@ func (e *SysTables) Update(tx *gorm.DB) (update SysTables, err error) {
 			t, ok := tableMap[e.Columns[i].FkTableName]
 			if ok {
 				e.Columns[i].FkTableNameClass = t.ClassName
-				t.MLTBName = strings.Replace(t.TBName, "_", "-", -1)
+				t.MLTBName = strings.ReplaceAll(t.TBName, "_", "-")
 				e.Columns[i].FkTableNamePackage = t.MLTBName
 			} else {
 				tableNameList := strings.Split(e.Columns[i].FkTableName, "_")

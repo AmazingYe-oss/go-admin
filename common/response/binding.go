@@ -76,12 +76,12 @@ func (e *bindConstructor) resolve(d interface{}) []uint8 {
 		if _, ok = tag.Lookup("uri"); ok {
 			bs = append(bs, 0)
 		}
-		if t, ok := tag.Lookup("binding"); ok && strings.Index(t, "dive") > -1 {
+		if t, ok := tag.Lookup("binding"); ok && strings.Contains(t, "dive") {
 			qValue := reflect.ValueOf(d)
 			bs = append(bs, e.resolve(qValue.Field(i))...)
 			continue
 		}
-		if t, ok := tag.Lookup("validate"); ok && strings.Index(t, "dive") > -1 {
+		if t, ok := tag.Lookup("validate"); ok && strings.Contains(t, "dive") {
 			qValue := reflect.ValueOf(d)
 			bs = append(bs, e.resolve(qValue.Field(i))...)
 		}

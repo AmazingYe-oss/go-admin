@@ -126,7 +126,7 @@ func getDiskInfo() map[string]interface{} {
 				diskDetail.Total /= MB
 				diskDetail.Used /= MB
 				diskDetail.Free /= MB
-				diskList = append(diskList, *diskDetail)
+				_ = append(diskList, *diskDetail)
 			}
 		}
 	}

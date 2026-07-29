@@ -35,7 +35,7 @@ func (e Gen) GetDBTableList(c *gin.Context) {
 	}
 
 	if size := c.Request.FormValue("pageSize"); size != "" {
-		pageSize, err = pkg.StringToInt(size)
+		pageSize, _ = pkg.StringToInt(size)
 	}
 
 	if index := c.Request.FormValue("pageIndex"); index != "" {

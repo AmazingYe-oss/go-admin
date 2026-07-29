@@ -113,7 +113,7 @@ func (e *SysApi) CheckStorageSysApi(c *[]runtime.Router) error {
 			Attrs(models.SysApi{Handle: v.Handler}).
 			FirstOrCreate(&models.SysApi{}).Error
 		if err != nil {
-			err := fmt.Errorf("Service CheckStorageSysApi error: %s \r\n ", err.Error())
+			err := fmt.Errorf("service CheckStorageSysApi error: %s \r\n ", err.Error())
 			return err
 		}
 	}
