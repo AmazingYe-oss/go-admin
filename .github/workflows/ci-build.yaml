@@ -50,55 +50,55 @@ jobs:
           go mod verify
 
       - name: Install goimports
-      #   run: go install golang.org/x/tools/cmd/goimports@v0.42.0
-      # 
+        run: go install golang.org/x/tools/cmd/goimports@v0.42.0
+
       - name: Auto format code
-      #   run: |
-      #     echo "执行 goimports 格式化..."
-      #     goimports -w .
-      # 
+        run: |
+          echo "执行 goimports 格式化..."
+          goimports -w .
+
       - name: Go Format Check
-      #   continue-on-error: true
-      #   run: |
-      #     if [ -n "$(gofmt -l .)" ]; then
-      #       echo "❌ 存在未格式化的代码文件："
-      #       gofmt -l .
-      #       exit 1
-      #     fi
-      # 
+        continue-on-error: true
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "❌ 存在未格式化的代码文件："
+            gofmt -l .
+            exit 1
+          fi
+
       - name: Golangci Lint
-      #   uses: golangci/golangci-lint-action@v9
-      #   with:
-      #     version: ${{ env.GOLANGCI_LINT_VERSION }}
-      #     args: --timeout=5m
-      #   continue-on-error: true
-      # 
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          args: --timeout=5m
+        continue-on-error: true
+
       - name: Run Unit Test
-      #   continue-on-error: true
-      #   run: |
-      #     go test -race -coverprofile=coverage.out -covermode=atomic ./...
-      # 
+        continue-on-error: true
+        run: |
+          go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
       - name: Upload coverage report
-      #   if: always()
-      #   uses: actions/upload-artifact@v6
-      #   with:
-      #     name: coverage-report
-      #     path: coverage.out
-      # 
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-report
+          path: coverage.out
+
       - name: Build Go binary
-      #   run: |
-      #     mkdir -p artifacts
-      #     go build -o artifacts/go-admin .
-      # 
+        run: |
+          mkdir -p artifacts
+          go build -o artifacts/go-admin .
+
       - name: Upload Go binary
-      #   if: always()
-      #   uses: actions/upload-artifact@v6
-      #   with:
-      #     name: go-admin-binary
-      #     path: artifacts/
-      # 
-      # # ============== 镜像构建推送 ==============
-      # 
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: go-admin-binary
+          path: artifacts/
+
+      # ============== 镜像构建推送 ==============
+
       - name: Login to Aliyun ACR
         if: github.event_name == 'push'
         uses: docker/login-action@v3
@@ -147,12 +147,12 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Scan image for vulnerabilities (Trivy)
-      #   if: github.event_name == 'push'
-      #   uses: aquasecurity/trivy-action@v0.36.0
-      #   with:
-      #     image-ref: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_REPO }}:${{ steps.tags.outputs.short_sha }}
-      #     format: 'table'
-      #     exit-code: '1'
-      #     ignore-unfixed: true
-      #     vuln-type: 'os,library'
-      #     severity: 'CRITICAL,HIGH'
+        if: github.event_name == 'push'
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_REPO }}:${{ steps.tags.outputs.short_sha }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
