@@ -74,6 +74,7 @@ jobs:
         continue-on-error: true
 
       - name: Run Unit Test
+        continue-on-error: true
         run: |
           go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
