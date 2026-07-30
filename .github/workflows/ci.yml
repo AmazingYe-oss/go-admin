@@ -184,7 +184,7 @@ jobs:
           cd gitops
           for f in go-admin-chart/values.yaml go-admin-chart/values-dev.yaml go-admin-chart/values-staging.yaml go-admin-chart/values-prod.yaml; do
             if [ -f "$f" ]; then
-              sed -i "s|^  tag:.*$|  tag: \"${NEW_TAG}\"|" "$f"
+              sed -i -E "s|^([[:space:]]+)tag:[[:space:]].*$|\1tag: \"${NEW_TAG}\"|" "$f"
               echo "Updated $f -> tag: ${NEW_TAG}"
             fi
           done
