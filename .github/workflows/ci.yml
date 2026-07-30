@@ -8,10 +8,11 @@ on:
     branches: [main]
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/go-admin
-  ACR_REGISTRY: registry.cn-hangzhou.aliyuncs.com
-  ACR_NAMESPACE: amazingye-oss
+  # 阿里云容器镜像服务（ACR 个人版）
+  ACR_REGISTRY: crpi-he7mqvhihpnvi08o.cn-shanghai.personal.cr.aliyuncs.com
+  ACR_NAMESPACE: go-project1
+  ACR_IMAGE: go-admin
+  # GitOps 仓库，CI 完成后会自动 commit 新的 image.tag
   GITOPS_REPO: AmazingYe-oss/infra-gitops
 
 jobs:
@@ -72,7 +73,7 @@ jobs:
         run: go mod download
 
       - name: Run unit tests
-        # go-admin 当前仓库尚未覆盖完整单测；想严格化时去掉 || true
+        # 当前仓库尚未覆盖完整单测；想严格化时去掉 || true
         run: go test -v -count=1 -timeout 5m ./... || true
 
   build:
@@ -92,25 +93,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Log in to ACR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.ACR_REGISTRY }}
-          username: ${{ secrets.ACR_ACCESS_KEY_ID }}
-          password: ${{ secrets.ACR_ACCESS_KEY_SECRET }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Compute short SHA
         id: shortsha
         run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push to GHCR + ACR
+      - name: Build and push to ACR
         id: build
         uses: docker/build-push-action@v6
         with:
@@ -118,10 +112,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ steps.shortsha.outputs.short }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/go-admin:sha-${{ steps.shortsha.outputs.short }}
-            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/go-admin:latest
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ env.ACR_IMAGE }}:sha-${{ steps.shortsha.outputs.short }}
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ env.ACR_IMAGE }}:latest
           labels: |
             org.opencontainers.image.title=go-admin
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -146,7 +138,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ needs.build.outputs.short-sha }}
+          image-ref: ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ env.ACR_IMAGE }}:sha-${{ needs.build.outputs.short-sha }}
           format: "sarif"
           output: "trivy-results.sarif"
           exit-code: "0"
@@ -160,14 +152,14 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
 
-  # ⭐ 关键步骤：CI 完成后自动改 infra-gitops 仓库的 image.tag，触发 ArgoCD 同步
+  # 关键步骤：CI 完成后自动改 infra-gitops 仓库的 image.tag，触发 ArgoCD 同步
   gitops-bump:
     name: Bump image tag in infra-gitops
     runs-on: ubuntu-latest
     needs: [build, scan]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
-      contents: write   # 写 PAT 也是 contents 权限
+      contents: write
     steps:
       - name: Checkout infra-gitops
         uses: actions/checkout@v4
