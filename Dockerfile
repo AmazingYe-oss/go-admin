@@ -1,50 +1,47 @@
+# syntax=docker/dockerfile:1.7
 
-# ---------- 阶段 1: builder（编译阶段）----------
-FROM golang:1.24 AS builder
+# -------- builder --------
+# 用 golang:1.24-bookworm（Debian），自带 gcc，无需额外装包
+FROM golang:1.24-bookworm AS builder
+WORKDIR /src
 
-# 设置工作目录
-WORKDIR /go/src/app
-
-# 配置国内 Go 模块代理
 ENV GOPROXY=https://goproxy.cn,direct
-ENV CGO_ENABLED=0
-ENV GOOS=linux
-ENV GOARCH=amd64
 
-# 先复制依赖文件，利用 Docker 缓存（依赖不变时跳过 go mod download）
+# 依赖层缓存
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
 
-# 复制源码并编译（-ldflags="-s -w" 去掉调试信息，减小二进制体积）
+# 源码
 COPY . .
-RUN go build -ldflags="-s -w" -o go-admin .
 
-# ---------- 阶段 2: runtime（运行阶段）----------
-FROM alpine:3.19
+# CGO 开启（SQLite 编译需要）；保留 sqlite3 build tag
+ENV CGO_ENABLED=1 GOOS=linux GOARCH=amd64
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -tags sqlite3 -trimpath -ldflags="-s -w" -o /out/go-admin .
 
-# 安装最小运行时依赖（ca-certificates 用于 HTTPS，tzdata 用于时区）
-RUN apk --no-cache add ca-certificates tzdata
-
-# 设置时区
-ENV TZ=Asia/Shanghai
-
-# 创建非 root 用户运行（安全最佳实践）
-RUN adduser -D -h /app appuser
+# -------- runtime --------
+FROM debian:bookworm-slim
 WORKDIR /app
 
-# 从 builder 阶段只复制编译好的二进制文件
-COPY --from=builder /go/src/app/go-admin .
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates tzdata && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd -m -u 1000 appuser
 
-# 复制运行时需要的目录（config 配置、static 上传文件、template 代码模板）
+# 拷贝编译产物 + 配置 + 静态资源 + 模板
+COPY --from=builder /out/go-admin /app/go-admin
 COPY config/ ./config/
 COPY static/ ./static/
 COPY template/ ./template/
 
-# 切换为非 root 用户
-USER appuser
+# 让 appuser 拥有 /app 全部文件（必须能写 temp/logs）
+RUN chown -R appuser:appuser /app
 
-# 声明端口
+USER appuser
 EXPOSE 8000
 
-# 启动命令：server 子命令启动 HTTP API 服务
-CMD ["./go-admin", "server", "-c", "config/settings.yml"]
+ENTRYPOINT ["/app/go-admin"]
+CMD ["server", "-c", "/app/config/settings.yml"]
