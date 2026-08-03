@@ -15,6 +15,8 @@ const (
 
 func InitMiddleware(r *gin.Engine) {
 	r.Use(DemoEvn())
+	// 指标采集（Prometheus RED 监控）
+	r.Use(Prometheus())
 	// 数据库链接
 	r.Use(WithContextDb)
 	// 日志处理
@@ -29,6 +31,9 @@ func InitMiddleware(r *gin.Engine) {
 	r.Use(Secure)
 	// 链路追踪
 	//r.Use(middleware.Trace())
+	// 指标暴露端点 /metrics
+	r.GET("/metrics", MetricsHandler())
+
 	sdk.Runtime.SetMiddleware(JwtTokenCheck, (*jwt.GinJWTMiddleware).MiddlewareFunc)
 	sdk.Runtime.SetMiddleware(RoleCheck, AuthCheckRole())
 	sdk.Runtime.SetMiddleware(PermissionCheck, actions.PermissionAction())
