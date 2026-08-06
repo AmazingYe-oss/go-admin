@@ -1,32 +1,56 @@
 # go-admin
 
-Backend service for the go-admin platform. Forked from [go-admin-team/go-admin](https://github.com/go-admin-team/go-admin) and adapted for multi-environment Kubernetes delivery via ArgoCD.
+go-admin 平台的后端服务。Fork 自 [go-admin-team/go-admin](https://github.com/go-admin-team/go-admin)，改造后适配 ArgoCD 多环境部署。
 
-- Language: Go 1.24
-- Web framework: Gin
-- ORM: GORM (MySQL / PostgreSQL / SQLite)
-- Auth: Casbin RBAC
-- Default port: `:8000` (HTTP) / `:4194` (Go runtime metrics)
+- 语言：Go 1.24
+- Web 框架：Gin
+- ORM：GORM（MySQL / PostgreSQL / SQLite）
+- 权限：Casbin RBAC
+- 默认端口：`:8000`（HTTP）/ `:4194`（Go runtime 指标）
 
-## Layout
+## 运行时架构
+
+```mermaid
+flowchart LR
+    Browser[浏览器 SPA]
+    subgraph K8s[Kubernetes go-admin-* 命名空间]
+        Pod[Gin :8000]
+        DB[(MySQL / PostgreSQL)]
+        SQLite[(SQLite 临时文件)]
+    end
+    subgraph Observ[监控链路]
+        Prom[Prometheus]
+        AM[AlertManager]
+        SMTP[QQ 邮件]
+    end
+
+    Browser -->|HTTPS| Pod
+    Pod -->|GORM| DB
+    Pod -->|CGO| SQLite
+    Pod -.运行时指标.-> Prom
+    Prom --> AM --> SMTP
+```
+
+Pod → Prometheus 用的是 `kube-prometheus-stack` 自带的 PodMonitor，按 `:4194/metrics` 自动发现，不需要手写 ServiceMonitor。
+
+## 目录结构
 
 ```
-cmd/                     Cobra entry points (server / migrate / config / app / version)
-app/                     Business modules (admin / jobs / other)
-common/                  Shared libraries (middleware / database / global / dto)
-config/                  Runtime config (settings.yml)
-docs/swagger/            Auto-generated Swagger docs
-docs/monitoring/         PrometheusRule + AlertManager + load-test scripts
-                         (see docs/monitoring/MONITORING-ALERTING.md)
-template/                CRUD code-generator templates
-static/                  Static assets
-Dockerfile               Multi-stage build (see below)
-.github/workflows/ci.yml CI pipeline (lint -> test -> build -> gitops-bump)
+cmd/                     Cobra 入口（server / migrate / config / app / version）
+app/                     业务模块（admin / jobs / other）
+common/                  共享代码（middleware / database / global / dto）
+config/                  运行配置（settings.yml）
+docs/swagger/            自动生成的 Swagger 文档
+docs/monitoring/         PrometheusRule + AlertManager + 压测脚本
+template/                CRUD 代码生成器模板
+static/                  静态资源
+Dockerfile               多阶段构建（见下）
+.github/workflows/ci.yml CI 流水线（lint → test → build → gitops-bump）
 ```
 
-## Docker build
+## Docker 构建
 
-Multi-stage Dockerfile, BuildKit cache mounts for `go mod` and `go-build`:
+多阶段 Dockerfile，BuildKit 缓存挂载 `go mod` 和 `go-build`：
 
 ```dockerfile
 # syntax=docker/dockerfile:1.7
@@ -47,50 +71,50 @@ RUN apt-get install -y --no-install-recommends ca-certificates tzdata
 COPY --from=builder /out/go-admin /app/go-admin
 ```
 
-Resulting image is ~86 MB. SQLite is built with `CGO_ENABLED=1`, so Alpine is not used (musl + glibc incompatibility was the reason). `-trimpath -ldflags="-s -w"` strips the symbol table.
+最终镜像约 86 MB。SQLite 走 `CGO_ENABLED=1`，所以没选 Alpine（musl + glibc 不兼容是直接原因）。`-trimpath -ldflags="-s -w"` 去掉符号表。
 
 ## CI
 
-`.github/workflows/ci.yml` runs four stages on every push to `main`:
+`.github/workflows/ci.yml` 在每次 push 时跑四阶段：
 
-| Stage         | Tool                                       | On failure |
-|---------------|--------------------------------------------|------------|
-| `lint`        | `go vet`                                   | block      |
-| `test`        | `go test -race -cover`                     | block      |
-| `build`       | `docker buildx`                            | block      |
-| `gitops-bump` | `yq` patches Helm `image.tag` in `infra-gitops` | warn, do not block |
+| 阶段          | 工具                      | 失败行为 |
+|---------------|---------------------------|----------|
+| `lint`        | `go vet`                  | 阻塞     |
+| `test`        | `go test -race -cover`    | 阻塞     |
+| `build`       | `docker buildx`           | 阻塞     |
+| `gitops-bump` | `yq` 修改 Helm `image.tag` | 警告，不阻塞 |
 
-Caches: Go modules (`/go/pkg/mod`) + Docker layer cache (`type=gha,mode=max`). Cold build ~3 min, warm build ~30 s on GitHub-hosted runners.
+缓存：Go 模块（`/go/pkg/mod`）+ Docker 层缓存（`type=gha,mode=max`）。冷启动约 3 分钟，热启动约 30 秒（GitHub-hosted runner 上）。
 
-Images are pushed to Aliyun ACR with two tags: immutable `sha-<short>` and floating `latest`. The `sha-` tag is what `infra-gitops` consumes.
+镜像推送到阿里云 ACR，打两个 tag：不可变的 `sha-<short>` 和浮动的 `latest`。`sha-` 这个 tag 是 `infra-gitops` 实际消费的。
 
-## Deployment
+## 部署
 
-This repo does not contain Helm charts. See [infra-gitops](https://github.com/AmazingYe-oss/infra-gitops) for the ArgoCD ApplicationSet that deploys the image to `go-admin-dev`, `go-admin-staging`, `go-admin-prod`.
+这个仓库不含 Helm chart。详见 [infra-gitops](https://github.com/AmazingYe-oss/infra-gitops)，ArgoCD ApplicationSet 在那里把镜像部署到 `go-admin-dev`、`go-admin-staging`、`go-admin-prod`。
 
-Every CI run on `main` triggers `gitops-bump`, which commits `image.tag` updates into `infra-gitops/go-admin-chart/values-*.yaml`. ArgoCD then auto-syncs within ~30-60 s.
+每次 `main` 上的 CI 都会触发 `gitops-bump`，去更新 `infra-gitops/go-admin-chart/values-*.yaml` 里的 `image.tag`。ArgoCD 在 30-60 秒内自动同步。
 
-## Local development
+## 本地开发
 
 ```bash
 git clone https://github.com/AmazingYe-oss/go-admin.git
 cd go-admin
 
-# SQLite (default, no extra services)
+# SQLite（默认，不依赖外部服务）
 go run main.go migrate
-go run main.go server          # listens on :8000
+go run main.go server          # 监听 :8000
 
 # MySQL
-# edit config/settings.yml -> DriverName=mysql + DSN, then the same two commands
+# 改 config/settings.yml -> DriverName=mysql + DSN，再跑同样的两条命令
 ```
 
-Default credentials: `admin / 123456`. Change them before exposing the service.
+默认账号：`admin / 123456`。上线前务必改掉。
 
-## Monitoring
+## 监控
 
-Alerting rules and load-test scripts live under `docs/monitoring/`. See [`docs/monitoring/MONITORING-ALERTING.md`](./docs/monitoring/MONITORING-ALERTING.md) for the full chain (Pod -> cAdvisor -> Prometheus -> PrometheusRule -> AlertManager -> QQ SMTP).
+告警规则和压测脚本在 `docs/monitoring/` 下，完整链路（Pod → cAdvisor → Prometheus → PrometheusRule → AlertManager → QQ SMTP）见 [`docs/monitoring/MONITORING-ALERTING.md`](./docs/monitoring/MONITORING-ALERTING.md)。
 
-To reproduce the end-to-end alert:
+复现端到端告警：
 
 ```bash
 export KUBECONFIG=$HOME/.kube/config-k3s-cloud
@@ -99,18 +123,18 @@ kubectl apply -f docs/monitoring/am-alertmanager.yaml
 bash docs/monitoring/bench-alert.sh
 ```
 
-## Known limitations
+## 已知局限
 
-- SQLite driver is wired in by default; `pgx` and `mongo` drivers are not yet integrated.
-- No `/healthz` or `/readyz` endpoint. Readiness is purely TCP-based (see Helm chart `readinessProbe`).
-- Metric output is from the Go runtime (`expvar`) and a basic `gin` middleware. Custom business metrics are not yet exposed.
+- 只接了 SQLite 一种驱动，`pgx` 和 `mongo` 还没接。
+- 没有 `/healthz` 和 `/readyz`，readiness 现在是纯 TCP（见 Helm chart 的 `readinessProbe`）。
+- 暴露的指标只有 Go runtime（`expvar`）和 gin 中间件，业务自定义指标还没加。
 
-## Related repos
+## 相关仓库
 
-| Repo | Role |
+| 仓库 | 作用 |
 |------|------|
-| [go-admin-ui](https://github.com/AmazingYe-oss/go-admin-ui) | Frontend SPA, deployed together with this service |
-| [infra-gitops](https://github.com/AmazingYe-oss/infra-gitops) | ArgoCD + Helm config, source of truth for image tags |
+| [go-admin-ui](https://github.com/AmazingYe-oss/go-admin-ui) | 前端 SPA，跟这个服务一起部署 |
+| [infra-gitops](https://github.com/AmazingYe-oss/infra-gitops) | ArgoCD + Helm 配置，镜像 tag 的单一可信源 |
 
 ## License
 
