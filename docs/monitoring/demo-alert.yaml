@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: demo-cpu-alert
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: demo
+    rules:
+    - alert: DemoHighCPU
+      expr: sum(rate(container_cpu_usage_seconds_total{namespace="go-admin-dev"}[1m])) by (pod) > 0.02
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "压测触发 CPU 告警"
+        description: "go-admin-dev CPU 超 2%，当前: {{ $value }}"

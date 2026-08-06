@@ -1,0 +1,61 @@
+# Alertmanager 配置（Step 7 邮箱告警版）
+# 原理：route 是邮局分拣台，receiver 是邮差；global.smtp_* 是告诉邮局用哪个账号寄信
+global:
+  resolve_timeout: 5m
+  # QQ 邮箱发信服务器：必须用 587（STARTTLS），不能用 465（SSL 直连，Alertmanager 的 Go 实现不支持）
+  smtp_smarthost: 'smtp.qq.com:587'
+  # 发件人 = 你自己的 QQ 邮箱
+  smtp_from: '1286163571@qq.com'
+  smtp_auth_username: '1286163571@qq.com'
+  # 授权码（不是 QQ 登录密码；在 QQ 邮箱设置 → 账号 → 开启 SMTP 生成）
+  smtp_auth_password: '<QQ授权码>'
+  # 强制加密传输
+  smtp_require_tls: true
+
+route:
+  group_by: ['namespace']   # 按命名空间合并同类项（多个告警打包成一条邮件）
+  group_wait: 30s           # 30 秒内同组的先攒着，一起发
+  group_interval: 5m
+  repeat_interval: 12h      # 同一条告警未恢复时，最多 12 小时重发一次，不轰炸邮箱
+  receiver: 'null'          # 已关闭邮件告警（默认丢弃）
+  routes:
+    - matchers:
+        - severity = "info" # info 级别的噪音进黑洞，不打扰邮箱
+      receiver: "null"
+    - matchers:
+        - alertname = "Watchdog"  # Alertmanager 内部心跳告警，官方标配进黑洞
+      receiver: "null"
+
+inhibit_rules:
+  - equal:
+      - namespace
+      - alertname
+    source_matchers:
+      - severity = critical
+    target_matchers:
+      - severity =~ warning|info
+  - equal:
+      - namespace
+      - alertname
+    source_matchers:
+      - severity = warning
+    target_matchers:
+      - severity = info
+  - equal:
+      - namespace
+    source_matchers:
+      - alertname = InfoInhibitor
+    target_matchers:
+      - severity = info
+  - target_matchers:
+      - alertname = InfoInhibitor
+
+receivers:
+  - name: 'email'           # 邮差 1 号：邮箱
+    email_configs:
+      - to: '1286163571@qq.com'  # 收件人（自测阶段先发给自己）
+        send_resolved: true      # 告警恢复时也发一封"已恢复"邮件
+  - name: 'null'            # 邮差 0 号：碎纸机（丢弃）
+
+templates:
+  - /etc/alertmanager/config/*.tmpl
